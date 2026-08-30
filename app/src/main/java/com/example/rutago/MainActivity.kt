@@ -65,6 +65,9 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
     var puntoPendiente by remember { mutableStateOf<GeoPoint?>(null) }
     var nombreMarcador by remember { mutableStateOf("") }
+    var marcadorSeleccionado by remember { mutableStateOf<Marker?>(null) }
+    var mostrarEdicion by remember { mutableStateOf(false) }
+    var nombreEdicion by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -95,7 +98,8 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                     if (textoBusqueda.isNotBlank()) {
                         scope.launch {
                             try {
-                                val resultados = RetrofitClient.nominatimApi.buscarDireccion(textoBusqueda)
+                                val resultados =
+                                    RetrofitClient.nominatimApi.buscarDireccion(textoBusqueda)
                                 if (resultados.isEmpty()) {
                                     mensajeError = "No se encontró esa dirección"
                                 } else {
@@ -108,6 +112,11 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                                         val marcador = Marker(map)
                                         marcador.position = GeoPoint(lat, lon)
                                         marcador.title = resultados[0].display_name
+                                        marcador.setOnMarkerClickListener { m, _ ->
+                                            marcadorSeleccionado = m as Marker
+                                            true
+                                        }
+                                        marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                                         map.overlays.add(marcador)
                                         map.invalidate()
                                     }
@@ -151,6 +160,11 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                             val marcador = Marker(map)
                             marcador.position = punto
                             marcador.title = nombreMarcador.ifBlank { "Sin nombre" }
+                            marcador.setOnMarkerClickListener { m, _ ->
+                                marcadorSeleccionado = m as Marker
+                                true
+                            }
+                            marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             map.overlays.add(marcador)
                             map.invalidate()
                         }
@@ -162,6 +176,66 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
             },
             dismissButton = {
                 TextButton(onClick = { puntoPendiente = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (marcadorSeleccionado != null && !mostrarEdicion) {
+        AlertDialog(
+            onDismissRequest = { marcadorSeleccionado = null },
+            title = { Text(marcadorSeleccionado?.title ?: "Marcador") },
+            text = { Text("¿Qué deseas hacer?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    nombreEdicion = marcadorSeleccionado?.title ?: ""
+                    mostrarEdicion = true
+                }) {
+                    Text("Editar")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        mapViewRef?.let { map ->
+                            map.overlays.remove(marcadorSeleccionado)
+                            map.invalidate()
+                        }
+                        marcadorSeleccionado = null
+                    }) {
+                        Text("Eliminar")
+                    }
+                    TextButton(onClick = { marcadorSeleccionado = null }) {
+                        Text("Cerrar")
+                    }
+                }
+            }
+        )
+    }
+
+    if (mostrarEdicion) {
+        AlertDialog(
+            onDismissRequest = { mostrarEdicion = false },
+            title = { Text("Editar nombre") },
+            text = {
+                OutlinedTextField(
+                    value = nombreEdicion,
+                    onValueChange = { nombreEdicion = it },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    marcadorSeleccionado?.title = nombreEdicion
+                    mostrarEdicion = false
+                    marcadorSeleccionado = null
+                }) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarEdicion = false }) {
                     Text("Cancelar")
                 }
             }
