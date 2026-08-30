@@ -4,39 +4,42 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
-import com.example.rutago.ui.theme.RutaGoTheme
-import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.XYTileSource
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.background
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.rutago.ui.theme.RutaGoTheme
+import kotlinx.coroutines.launch
+import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.tilesource.XYTileSource
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,10 +63,18 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
     var textoBusqueda by remember { mutableStateOf("") }
     var mensajeError by remember { mutableStateOf<String?>(null) }
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    var puntoPendiente by remember { mutableStateOf<GeoPoint?>(null) }
+    var nombreMarcador by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
-        MapaOsm(onMapReady = { mapViewRef = it })
+        MapaOsm(
+            onMapReady = { mapViewRef = it },
+            onMapClick = { punto ->
+                puntoPendiente = punto
+                nombreMarcador = ""
+            }
+        )
 
         Column(
             modifier = Modifier
@@ -94,7 +105,6 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                                     mapViewRef?.controller?.animateTo(GeoPoint(lat, lon))
                                     mapViewRef?.controller?.setZoom(16.0)
                                     mapViewRef?.let { map ->
-                                        map.overlays.clear()
                                         val marcador = Marker(map)
                                         marcador.position = GeoPoint(lat, lon)
                                         marcador.title = resultados[0].display_name
@@ -120,10 +130,47 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
             }
         }
     }
+
+    if (puntoPendiente != null) {
+        AlertDialog(
+            onDismissRequest = { puntoPendiente = null },
+            title = { Text("Nombrar marcador") },
+            text = {
+                OutlinedTextField(
+                    value = nombreMarcador,
+                    onValueChange = { nombreMarcador = it },
+                    placeholder = { Text("Ej: Mi casa") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val punto = puntoPendiente
+                    if (punto != null) {
+                        mapViewRef?.let { map ->
+                            val marcador = Marker(map)
+                            marcador.position = punto
+                            marcador.title = nombreMarcador.ifBlank { "Sin nombre" }
+                            map.overlays.add(marcador)
+                            map.invalidate()
+                        }
+                    }
+                    puntoPendiente = null
+                }) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { puntoPendiente = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-fun MapaOsm(onMapReady: (MapView) -> Unit) {
+fun MapaOsm(onMapReady: (MapView) -> Unit, onMapClick: (GeoPoint) -> Unit) {
     AndroidView(factory = { context ->
         val stadiaTileSource = XYTileSource(
             "StadiaAlidade",
@@ -133,11 +180,23 @@ fun MapaOsm(onMapReady: (MapView) -> Unit) {
             "© Stadia Maps, © OpenMapTiles, © OpenStreetMap contributors"
         )
 
+        val mapEventsReceiver = object : MapEventsReceiver {
+            override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
+                p?.let { onMapClick(it) }
+                return true
+            }
+
+            override fun longPressHelper(p: GeoPoint?): Boolean {
+                return false
+            }
+        }
+
         MapView(context).apply {
             setTileSource(stadiaTileSource)
             setMultiTouchControls(true)
             controller.setZoom(15.0)
             controller.setCenter(GeoPoint(4.7110, -74.0721))
+            overlays.add(MapEventsOverlay(mapEventsReceiver))
             onMapReady(this)
         }
     })
