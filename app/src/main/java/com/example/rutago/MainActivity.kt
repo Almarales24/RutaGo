@@ -24,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -68,6 +69,8 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
     var marcadorSeleccionado by remember { mutableStateOf<Marker?>(null) }
     var mostrarEdicion by remember { mutableStateOf(false) }
     var nombreEdicion by remember { mutableStateOf("") }
+    val listaMarcadores = remember { mutableStateListOf<Marker>() }
+    var distanciaTexto by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -119,6 +122,18 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                                         marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                                         map.overlays.add(marcador)
                                         map.invalidate()
+
+                                        listaMarcadores.add(marcador)
+                                        if (listaMarcadores.size >= 2) {
+                                            val ultimo = listaMarcadores[listaMarcadores.size - 1]
+                                            val penultimo = listaMarcadores[listaMarcadores.size - 2]
+                                            val distanciaMetros = ultimo.position.distanceToAsDouble(penultimo.position)
+                                            distanciaTexto = if (distanciaMetros >= 1000) {
+                                                "Distancia: %.2f km".format(distanciaMetros / 1000)
+                                            } else {
+                                                "Distancia: %.0f m".format(distanciaMetros)
+                                            }
+                                        }
                                     }
                                 }
                             } catch (e: Exception) {
@@ -135,6 +150,15 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                     text = it,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            distanciaTexto?.let {
+                Text(
+                    text = it,
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .background(androidx.compose.ui.graphics.Color.White)
                 )
             }
         }
@@ -167,6 +191,18 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                             marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             map.overlays.add(marcador)
                             map.invalidate()
+
+                            listaMarcadores.add(marcador)
+                            if (listaMarcadores.size >= 2) {
+                                val ultimo = listaMarcadores[listaMarcadores.size - 1]
+                                val penultimo = listaMarcadores[listaMarcadores.size - 2]
+                                val distanciaMetros = ultimo.position.distanceToAsDouble(penultimo.position)
+                                distanciaTexto = if (distanciaMetros >= 1000) {
+                                    "Distancia: %.2f km".format(distanciaMetros / 1000)
+                                } else {
+                                    "Distancia: %.0f m".format(distanciaMetros)
+                                }
+                            }
                         }
                     }
                     puntoPendiente = null
@@ -200,6 +236,7 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                     TextButton(onClick = {
                         mapViewRef?.let { map ->
                             map.overlays.remove(marcadorSeleccionado)
+                            listaMarcadores.remove(marcadorSeleccionado)
                             map.invalidate()
                         }
                         marcadorSeleccionado = null
