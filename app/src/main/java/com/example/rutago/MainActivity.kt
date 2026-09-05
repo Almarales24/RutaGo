@@ -41,6 +41,8 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import androidx.core.content.ContextCompat
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,6 +121,7 @@ fun PantallaMapa(modifier: Modifier = Modifier) {
                                             marcadorSeleccionado = m as Marker
                                             true
                                         }
+                                        marcador.icon = ContextCompat.getDrawable(map.context, R.drawable.ic_marcador_personalizado)
                                         marcador.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                                         map.overlays.add(marcador)
                                         map.invalidate()
