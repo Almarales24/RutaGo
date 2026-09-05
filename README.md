@@ -93,21 +93,23 @@ El proyecto no contiene directorios `Models`, `Controllers` o `Views` separados:
 - `gradle.properties`: contiene propiedades de Gradle para la compilación del proyecto.
 - `settings.gradle.kts`: configura el nombre y los módulos incluidos en la compilación.
 
-## Capturas de pantalla
+### Pantalla del mapa
 
-Pantalla del mapa
+<p align="center">
+  <img width="360" alt="Pantalla del mapa de RutaGo" src="https://github.com/user-attachments/assets/d9cb9a02-cd35-480e-9dad-3d7e6711bf14" />
+</p>
 
-<img width="1080" height="2280" alt="image" src="https://github.com/user-attachments/assets/d9cb9a02-cd35-480e-9dad-3d7e6711bf14" />
+### Búsqueda de direcciones
 
+<p align="center">
+  <img width="360" alt="Búsqueda de direcciones en RutaGo" src="https://github.com/user-attachments/assets/6e7da641-2ce5-4f49-918b-309df24c87d1" />
+</p>
 
-Búsqueda de direcciones
+### Gestión de marcadores
 
-<img width="1080" height="2280" alt="image" src="https://github.com/user-attachments/assets/6e7da641-2ce5-4f49-918b-309df24c87d1" />
-
-
-Gestión de marcadores.
-
-<img width="1080" height="2280" alt="image" src="https://github.com/user-attachments/assets/3db79796-28bf-4e07-bf81-849fbbfe2a6a" />
+<p align="center">
+  <img width="360" alt="Gestión de marcadores en RutaGo" src="https://github.com/user-attachments/assets/3db79796-28bf-4e07-bf81-849fbbfe2a6a" />
+</p>
 
 
 ## Autor
